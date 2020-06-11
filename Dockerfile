@@ -23,6 +23,6 @@ EXPOSE 8081
 RUN cd src && go build
 RUN mv src/stockfish-server .
 
-HEALTHCHECK --interval=5m --timeout=3s CMD curl -f http://localhost:8081/move || exit 1
+HEALTHCHECK --interval=5m --timeout=3s CMD curl -f "http://localhost:8081/move?game=test&fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR%20w%20KQkq%20-%200%201" | grep "Results"
 
 ENTRYPOINT ./stockfish-server
