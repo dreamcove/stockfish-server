@@ -72,10 +72,9 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 			// set some engine options
 			engine.SetOptions(uci.Options{
 				Hash:    128,
-				Ponder:  true,
+				Ponder:  false,
 				OwnBook: true,
-				MultiPV: 4,
-				Threads: 10,
+				MultiPV: 1,
 			})
 
 			engine.SendOption("UCI_LimitStrength", 800)
