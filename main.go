@@ -7,7 +7,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 )
+
+type EngineWrapper struct {
+	Engine *uci.Engine
+	LastAccessed time.Time
+}
 
 func main() {
 	http.HandleFunc("/move", ChessServer)
@@ -19,10 +26,9 @@ func ChessServer(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-
-	if _, ok := r.URL.Query()["game"];ok {
+	if game, ok := r.URL.Query()["game"];ok {
 		if fenString, ok := r.URL.Query()["fen"]; ok {
-			result, err := GetStockfishResults(fenString[0])
+			result, err := GetStockfishResults(strings.Join(game, " "), fenString[0])
 
 			if err == nil {
 				responseObj = result
@@ -53,25 +59,54 @@ func ChessServer(w http.ResponseWriter, r *http.Request) {
 		w.Write(bytes)
 	}
 }
-func GetStockfishResults(fenString string) (result *uci.Results, err error) {
-	eng, err := uci.NewEngine(os.Getenv("STOCKFISH_PATH"))
-	if err == nil {
-		// set some engine options
-		eng.SetOptions(uci.Options{
-			Hash:    128,
-			Ponder:  false,
-			OwnBook: true,
-			MultiPV: 4,
-		})
 
+var engines map[string]EngineWrapper = map[string]EngineWrapper{}
+
+func GetEngine(gameID string) (engine *uci.Engine, err error) {
+	if wrapper, ok := engines[gameID]; ok {
+		wrapper.LastAccessed = time.Now()
+		engine = wrapper.Engine
+	} else {
+		engine, err = uci.NewEngine(os.Getenv("STOCKFISH_PATH"))
+		if err == nil {
+			// set some engine options
+			engine.SetOptions(uci.Options{
+				Hash:    128,
+				Ponder:  true,
+				OwnBook: true,
+				MultiPV: 4,
+			})
+
+			wrapper := EngineWrapper{
+				Engine:       engine,
+				LastAccessed: time.Now(),
+			}
+			engines[gameID] = wrapper
+		}
+	}
+
+	go func(gameID string) {
+		time.Sleep(10 * time.Minute)
+		if wrapper, ok := engines[gameID]; ok {
+			if wrapper.LastAccessed.Add(5 * time.Minute).Before(time.Now()) {
+				delete(engines, gameID)
+				wrapper.Engine.Close()
+			}
+		}
+	}(gameID)
+
+	return engine, err
+}
+
+func GetStockfishResults(gameID string, fenString string) (result *uci.Results, err error) {
+	eng, err := GetEngine(gameID)
+	if err == nil {
 		// set the starting position
 		eng.SetFEN(fenString)
 
 		// set some result filter options
 		resultOpts := uci.HighestDepthOnly | uci.IncludeUpperbounds | uci.IncludeLowerbounds
 		result, err = eng.GoDepth(10, resultOpts)
-
-		eng.Close()
 	}
 
 	return result, err
