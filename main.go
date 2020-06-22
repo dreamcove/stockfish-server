@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,7 +29,18 @@ func ChessServer(w http.ResponseWriter, r *http.Request) {
 
 	if game, ok := r.URL.Query()["game"];ok {
 		if fenString, ok := r.URL.Query()["fen"]; ok {
-			result, err := GetStockfishResults(strings.Join(game, " "), fenString[0])
+			elo := 800
+
+			var eloString []string
+
+			if eloString, ok = r.URL.Query()["elo"]; ok {
+				eloTemp, err := strconv.Atoi(eloString[0])
+				if err == nil {
+					elo = eloTemp
+				}
+			}
+
+			result, err := GetStockfishResults(strings.Join(game, " "), fenString[0], elo)
 
 			if err == nil {
 				responseObj = result
@@ -77,9 +89,6 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 				MultiPV: 1,
 			})
 
-			engine.SendOption("UCI_LimitStrength", true)
-			engine.SendOption("UCI_Elo", 800)
-
 			wrapper := EngineWrapper{
 				Engine:       engine,
 				LastAccessed: time.Now(),
@@ -101,11 +110,14 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 	return engine, err
 }
 
-func GetStockfishResults(gameID string, fenString string) (result *uci.Results, err error) {
+func GetStockfishResults(gameID string, fenString string, elo int) (result *uci.Results, err error) {
 	eng, err := GetEngine(gameID)
 	if err == nil {
 		// set the starting position
 		eng.SetFEN(fenString)
+
+		eng.SendOption("UCI_LimitStrength", true)
+		eng.SendOption("UCI_Elo", elo)
 
 		// set some result filter options
 		resultOpts := uci.HighestDepthOnly | uci.IncludeUpperbounds | uci.IncludeLowerbounds
