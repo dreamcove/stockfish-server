@@ -77,7 +77,8 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 				MultiPV: 1,
 			})
 
-			engine.SendOption("UCI_LimitStrength", 800)
+			engine.SendOption("UCI_LimitStrength", true)
+			engine.SendOption("UCI_Elo", true)
 
 			wrapper := EngineWrapper{
 				Engine:       engine,
