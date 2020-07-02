@@ -87,6 +87,7 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 				Ponder:  true,
 				OwnBook: true,
 				MultiPV: 4,
+				Threads: 5,
 			})
 
 			wrapper := EngineWrapper{
