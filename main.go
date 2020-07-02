@@ -84,9 +84,9 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 			// set some engine options
 			engine.SetOptions(uci.Options{
 				Hash:    128,
-				Ponder:  false,
+				Ponder:  true,
 				OwnBook: true,
-				MultiPV: 1,
+				MultiPV: 4,
 			})
 
 			wrapper := EngineWrapper{
@@ -121,7 +121,7 @@ func GetStockfishResults(gameID string, fenString string, elo int) (result *uci.
 
 		// set some result filter options
 		resultOpts := uci.HighestDepthOnly | uci.IncludeUpperbounds | uci.IncludeLowerbounds
-		result, err = eng.GoDepth(10, resultOpts)
+		result, err = eng.GoDepth(16, resultOpts)
 	}
 
 	return result, err
