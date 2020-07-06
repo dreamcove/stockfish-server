@@ -1,9 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'dreamcove/build-aws:latest'
-    }
-  }
+  agent { any }
   options {
     disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '5'))
