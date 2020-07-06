@@ -24,7 +24,11 @@ pipeline {
         }
       }
       steps {
-        sh 'docker push dreamcove/stockfish-server'
+        withCredentials([
+          string(credentialsId: 'DOCKER_PASSWORD', variable: 'DOCKER_PASSWORD'),
+        ]) {
+          sh 'docker login --username vaporofnuance --password ${DOCKER_PASSWORD} && docker push dreamcove/stockfish-server'
+        }
       }
     }
   }
