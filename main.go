@@ -74,11 +74,54 @@ func ChessServer(w http.ResponseWriter, r *http.Request) {
 
 var engines map[string]EngineWrapper = map[string]EngineWrapper{}
 
+func getSurvivalTime() time.Duration {
+	survivalSeconds := os.Getenv("SURVIVAL_TIME")
+	result, err := strconv.Atoi(survivalSeconds)
+	if err != nil {
+		result = 30
+	}
+
+	return time.Duration(result) * time.Second
+}
+
+func getMaxEngines() int {
+	maxEngines := os.Getenv("MAX_ENGINES")
+	result, err := strconv.Atoi(maxEngines)
+	if err != nil {
+		result = 200
+	}
+
+	return result
+}
+
+func pruneEngines() {
+	for len(engines) > getMaxEngines() {
+		var gameId *string
+		var engineToPrune *EngineWrapper
+
+		for k, v := range engines {
+			if engineToPrune == nil {
+				engineToPrune = &v
+				gameId = &k
+			} else {
+				if v.LastAccessed.Before(engineToPrune.LastAccessed) {
+					engineToPrune = &v
+					gameId = &k
+				}
+			}
+		}
+
+		delete(engines, *gameId)
+	}
+}
+
 func GetEngine(gameID string) (engine *uci.Engine, err error) {
 	if wrapper, ok := engines[gameID]; ok {
 		wrapper.LastAccessed = time.Now()
 		engine = wrapper.Engine
 	} else {
+		pruneEngines()
+
 		engine, err = uci.NewEngine(os.Getenv("STOCKFISH_PATH"))
 		if err == nil {
 			// set some engine options
@@ -99,9 +142,9 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 	}
 
 	go func(gameID string) {
-		time.Sleep(10 * time.Minute)
+		time.Sleep(getSurvivalTime() * 2)
 		if wrapper, ok := engines[gameID]; ok {
-			if wrapper.LastAccessed.Add(5 * time.Minute).Before(time.Now()) {
+			if wrapper.LastAccessed.Add(getSurvivalTime()).Before(time.Now()) {
 				delete(engines, gameID)
 				wrapper.Engine.Close()
 			}
