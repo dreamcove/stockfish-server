@@ -17,7 +17,7 @@ pipeline {
         sh 'docker build .'
       }
     }
-    stage('Lambdas') {
+    stage('Publish') {
       when {
         expression {
           env.DEPLOYENV == 'master'
