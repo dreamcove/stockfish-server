@@ -20,7 +20,7 @@ pipeline {
     stage('Publish') {
       when {
         expression {
-          env.DEPLOYENV == 'master'
+          env.BRANCH_NAME == 'master'
         }
       }
       steps {
