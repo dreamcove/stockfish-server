@@ -129,8 +129,8 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 				Hash:    128,
 				Ponder:  false,
 				OwnBook: true,
-				MultiPV: 10,
-				Threads: 2,
+				MultiPV: 1,
+				Threads: 1,
 			})
 
 			wrapper := EngineWrapper{
