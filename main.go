@@ -129,7 +129,7 @@ func GetEngine(gameID string) (engine *uci.Engine, err error) {
 				Hash:    128,
 				Ponder:  false,
 				OwnBook: true,
-				MultiPV: 2,
+				MultiPV: 10,
 				Threads: 2,
 			})
 
@@ -160,6 +160,7 @@ func GetStockfishResults(gameID string, fenString string, elo int) (result *uci.
 		// set the starting position
 		eng.SetFEN(fenString)
 
+		eng.SendOption("Skill Level", 0)
 		eng.SendOption("UCI_LimitStrength", true)
 		eng.SendOption("UCI_Elo", elo)
 
